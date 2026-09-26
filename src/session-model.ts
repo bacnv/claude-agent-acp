@@ -445,9 +445,21 @@ export async function getAvailableModels(
   // Anything else (fuzzy match, allowlist-synthesized value, alias) gets a
   // setModel call so we don't drift from the user's intended pin.
   const sdkSawSameValue = sdkModels.some((m) => m.value === currentModel.value);
+  // On resume with no override the SDK is on the transcript's model — but that record
+  // is whatever the provider echoed back, and a gateway COMBO echoes its UPSTREAM name
+  // (`DeepSeek-V4-Flash`), not the id the caller asked for. The reconciler maps that
+  // back to `deepseek-v4-flash`, so comparing the RESOLVED value cannot tell the two
+  // apart: it reports a model the session is not running, then skips the call that
+  // would make it true. Compare the raw hint instead — equal means the transcript
+  // already holds a catalog id and the SDK is genuinely where we want it.
+  // No transcript record at all leaves currentModel on models[0] — the `default`
+  // sentinel, not a real pin — so there is nothing to sync to.
   const skipSetModel =
-    resolvedFromInput === undefined ||
-    (!isResumedSession && currentModel.value === resolvedFromInput && sdkSawSameValue);
+    resolvedFromInput === undefined
+      ? !isResumedSession ||
+        resumedModelHint === undefined ||
+        currentModel.value === resumedModelHint
+      : !isResumedSession && currentModel.value === resolvedFromInput && sdkSawSameValue;
   if (!skipSetModel) {
     const setModelStartedAt = performance.now();
     try {
