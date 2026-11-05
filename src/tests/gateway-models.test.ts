@@ -385,7 +385,8 @@ describe("getAvailableModels under a gateway listing", () => {
     const state = await available(setModel, true, "claude-haiku-4-5");
 
     expect(state.currentModelId).toBe("haiku");
-    expect(setModel).not.toHaveBeenCalled();
+    // Fork: a raw transcript id that differs from the catalog id is re-asserted (combo-echo fix).
+    expect(setModel).toHaveBeenCalledWith("haiku");
   });
 
   it("keeps a resumed transcript model outside an allowlist when no gateway narrowed the list", async () => {
